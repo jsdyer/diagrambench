@@ -2,7 +2,8 @@
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-import shutil, tempfile, threading
+import re, shutil, tempfile, threading
+import xml.etree.ElementTree as ET
 from playwright.sync_api import sync_playwright, expect
 ROOT=Path(__file__).resolve().parents[1]
 class QuietHandler(SimpleHTTPRequestHandler):
@@ -24,7 +25,19 @@ def main():
     page.locator('#code').fill('flowchart LR\n Test[Independent custom source] --> Result[Rendered locally]')
     page.locator('#render').click();expect(page.locator('#status')).to_contain_text('Diagram ready',timeout=30000)
     with page.expect_download() as download:page.locator('#svg').click()
-    svg=Path(download.value.path()).read_text();assert 'Independent custom source' in svg and '<script' not in svg
+    svg=Path(download.value.path()).read_text()
+    # Mermaid wraps visible labels across SVG tspans; assert their rendered text,
+    # rather than requiring the sentence to be contiguous in serialized markup.
+    document=ET.fromstring(svg)
+    text=' '.join(' '.join(document.itertext()).split())
+    assert 'Independent custom source' in text, text[-2000:]
+    assert 'Rendered locally' in text, text[-2000:]
+    for element in document.iter():
+     assert element.tag.rsplit('}',1)[-1].lower() not in {'script','foreignobject','iframe'}, element.tag
+     for key,value in element.attrib.items():
+      name=key.rsplit('}',1)[-1].lower()
+      assert not name.startswith('on'), key
+      if name=='href': assert not value or re.fullmatch(r'#[\w:.-]+',value), value
     previous=page.locator('#diagram').get_attribute('src')
     page.locator('#code').fill('flowchart LR\n A[unterminated')
     page.locator('#render').click();expect(page.locator('#status')).to_contain_text('previous diagram is unchanged',timeout=30000)
