@@ -1,7 +1,6 @@
-// Keep transformations separate from the DOM so they can be tested directly.
-export function cleanLines(text) {
-  if (typeof text !== 'string') throw new TypeError('Expected text');
-  const lines = text.split(/\r\n|\r|\n/).map(line => line.trim()).filter(Boolean);
-  const unique = [...new Set(lines)];
-  return { text: unique.join('\n'), count: unique.length, removed: lines.length - unique.length };
-}
+export function validateCode(code, max=15000){if(typeof code!=='string'||!code.trim())throw Error('Write or load a diagram first.');if(code.length>max)throw Error(`Keep diagrams within ${max.toLocaleString()} characters.`);if(/^\s*---\s*$/m.test(code)||/%%\{/.test(code))throw Error('Diagram configuration blocks are not supported. Choose the theme using the controls.');return code.trim();}
+export function endpoint(value){let u;try{u=new URL(value);}catch{throw Error('Enter the HTTPS address of your Kroki server.');}if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash)throw Error('Use an HTTPS server URL without credentials, query or fragment.');return u.href.replace(/\/$/,'');}
+export function safeReference(value){return !value||/^#[\w:.-]+$/.test(value);}
+export function safeStyle(value){return !/(@import|@font-face|expression\s*\(|javascript\s*:|(?:https?|data|ftp)\s*:|\\)/i.test(value)&&!Array.from(value.matchAll(/url\s*\(([^)]*)\)/gi)).some(m=>!/^\s*['"]?#[\w:.-]+['"]?\s*$/.test(m[1]));}
+export function receipt(code,svg,{engine='mermaid',theme='default',version='12.3.0'}={}){return {schema:'coolcode.diagram.v1',savedAt:new Date().toISOString(),engine,theme,version,code,svg};}
+export function readProject(value,max=15000){if(!value||value.schema!=='coolcode.diagram.v1'||!['mermaid','kroki'].includes(value.engine)||typeof value.theme!=='string')throw Error('This is not a Diagram Bench project.');return {code:validateCode(value.code,max),engine:value.engine,theme:['default','neutral','dark','forest'].includes(value.theme)?value.theme:'default'};}

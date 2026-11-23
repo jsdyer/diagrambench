@@ -1,0 +1,45 @@
+{
+  "mermaidVersion": "12.3.0",
+  "maxCharacters": 15000,
+  "renderTimeoutSeconds": 20,
+  "defaultTheme": "default",
+  "krokiEndpoint": "",
+  "krokiTypes": [
+    "graphviz",
+    "plantuml",
+    "d2",
+    "ditaa"
+  ],
+  "templates": [
+    {
+      "id": "flow",
+      "name": "A decision",
+      "code": "flowchart TD\n    A[Collect evidence] --> B{Source available?}\n    B -->|Yes| C[Check the record]\n    B -->|No| D[Keep the last capture]\n    C --> E[Publish findings]\n    D --> E"
+    },
+    {
+      "id": "sequence",
+      "name": "A request",
+      "code": "sequenceDiagram\n    participant Visitor\n    participant App\n    participant Source\n    Visitor->>App: Search a record\n    App->>Source: Request public metadata\n    Source-->>App: Dated response\n    App-->>Visitor: Evidence and source link"
+    },
+    {
+      "id": "state",
+      "name": "A lifecycle",
+      "code": "stateDiagram-v2\n    [*] --> Draft\n    Draft --> Review\n    Review --> Published: Accepted\n    Review --> Draft: Revise\n    Published --> Archived\n    Archived --> [*]"
+    },
+    {
+      "id": "er",
+      "name": "A data model",
+      "code": "erDiagram\n    CAPTURE ||--o{ RECORD : contains\n    SOURCE ||--o{ CAPTURE : supplies\n    RECORD {\n        string id\n        string title\n        date observed_at\n    }"
+    },
+    {
+      "id": "timeline",
+      "name": "A timeline",
+      "code": "timeline\n    title A small project\n    Research : Find sources\n    Prototype : Try real inputs\n    Review : Check the evidence\n    Publish : Keep improving"
+    },
+    {
+      "id": "gantt",
+      "name": "A project",
+      "code": "gantt\n    title A working week\n    dateFormat YYYY-MM-DD\n    section Build\n    Research :2026-11-23, 2d\n    Implement :2026-11-25, 3d\n    Review :2026-11-28, 1d"
+    }
+  ]
+}

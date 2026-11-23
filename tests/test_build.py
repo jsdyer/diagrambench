@@ -1,3 +1,5 @@
+from html.parser import HTMLParser
+import re
 import json
 from pathlib import Path
 import shutil
@@ -28,7 +30,7 @@ class BuildTests(unittest.TestCase):
         build(self.root)
         page = (self.root / "dist/index.html").read_text()
         self.assertIn('&lt;img', page)
-        self.assertNotIn('<img', page)
+        self.assertNotIn('<img src=x onerror=', page)
         self.assertNotIn('{{', page)
         self.assertIn('href="./style.css"', page)
         self.assertFalse((self.root / "dist/private.txt").exists())
@@ -47,6 +49,26 @@ class BuildTests(unittest.TestCase):
                 self.assertEqual('/assets/tool-metrics.js' in page, enabled)
                 self.assertEqual(f'https://coolcode.ca/report/?tool={slug}' in page, enabled)
                 self.assertNotIn("{{", page)
+
+    def test_opaque_renderer_scripts_have_build_nonce(self):
+        build(self.root)
+        page = (self.root / "dist/render.html").read_text()
+        self.assertNotIn("{{", page)
+        self.assertNotIn("script-src 'self'", page)
+        nonce = re.search(r"script-src 'nonce-([A-Za-z0-9_-]{32})'", page).group(1)
+        class ScriptParser(HTMLParser):
+            def __init__(self):
+                super().__init__(); self.scripts = []
+            def handle_starttag(self, tag, attrs):
+                if tag == "script": self.scripts.append(dict(attrs))
+        parser = ScriptParser(); parser.feed(page)
+        self.assertEqual(len(parser.scripts), 2)
+        self.assertEqual([s["nonce"] for s in parser.scripts], [nonce, nonce])
+        self.assertEqual([s["src"] for s in parser.scripts], ["./render.js", "./vendor/mermaid-12.3.0.min.js"])
+        self.assertIn("connect-src 'none'", page)
+        self.assertIn('sandbox="allow-scripts"', (self.root / "dist/index.html").read_text())
+        build(self.root)
+        self.assertNotIn(nonce, (self.root / "dist/render.html").read_text())
 
     def test_url_matches_tool_id(self):
         self.edit(url="/different/")

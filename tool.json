@@ -1,16 +1,22 @@
 {
-  "id": "coolcode-tool-template",
-  "title": "CoolCode Tool Starter",
-  "description": "A browser-only example that trims lines and removes exact duplicates.",
-  "category": "security",
-  "tags": ["text", "lines", "duplicates"],
-  "icon": "scan-search",
-  "url": "/coolcode-tool-template/",
-  "source": "https://github.com/jsdyer/coolcode-tool-template",
+  "id": "diagrambench",
+  "title": "Diagram Bench",
+  "description": "Turn diagram text into clear, editable SVG and PNG diagrams in your browser.",
+  "category": "projects",
+  "tags": [
+    "diagrams",
+    "Mermaid",
+    "SVG",
+    "flowcharts",
+    "developer"
+  ],
+  "icon": "workflow",
+  "url": "/diagrambench/",
+  "source": "https://github.com/jsdyer/diagrambench",
   "hosting": "project",
   "access": "browser",
   "data_info": {
     "mode": "local",
-    "detail": "The browser reads the text you paste and compares its lines."
+    "detail": "Mermaid renders locally; optional Kroki rendering sends code only to a server you choose."
   }
 }

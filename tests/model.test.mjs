@@ -1,21 +1,9 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { cleanLines } from '../web/model.mjs';
-test('trims, removes blanks and preserves first-seen order', () => {
-  assert.deepEqual(cleanLines('  Halifax\nLangley\nHalifax\n\nVancouver  '), {
-    text: 'Halifax\nLangley\nVancouver', count: 3, removed: 1,
-  });
-});
-test('supports Windows and old Mac line endings', () => {
-  assert.equal(cleanLines('a\r\nb\ra').text, 'a\nb');
-});
-test('empty text and whitespace produce an empty result', () => {
-  assert.deepEqual(cleanLines(' \n\t'), { text: '', count: 0, removed: 0 });
-});
-test('preserves case and Unicode', () => {
-  assert.equal(cleanLines('Québec\nquébec\n東京\nQuébec').text, 'Québec\nquébec\n東京');
-});
-test('treats markup as ordinary text', () => {
-  assert.equal(cleanLines('<script>alert(1)</script>\n<script>alert(1)</script>').text, '<script>alert(1)</script>');
-});
-test('rejects non-text input', () => { assert.throws(() => cleanLines(null), TypeError); });
+import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';import{validateCode,endpoint,safeReference,safeStyle,receipt,readProject}from'../web/model.mjs';
+test('accepts custom diagrams beyond the presets',()=>assert.equal(validateCode('flowchart LR\n A[Custom] --> B[Works]'),'flowchart LR\n A[Custom] --> B[Works]'));
+test('rejects empty and oversized source',()=>{assert.throws(()=>validateCode('  '));assert.throws(()=>validateCode('hello',4));});
+test('embedded configuration cannot lower security',()=>{assert.throws(()=>validateCode('%%{init: {securityLevel:"loose"}}%%\nflowchart LR'));assert.throws(()=>validateCode('---\nconfig: {}\n---\nflowchart LR'));});
+test('server must be explicit HTTPS without credentials',()=>{assert.equal(endpoint('https://diagrams.example/base/'),'https://diagrams.example/base');for(const x of ['http://test','https://user:pass@test','https://test?token=x','javascript:alert(1)'])assert.throws(()=>endpoint(x));});
+test('SVG references remain local',()=>{assert.equal(safeReference('#arrow-1'),true);for(const x of ['https://example.com','data:image/svg+xml,anything','javascript:alert(1)'])assert.equal(safeReference(x),false);});
+test('SVG styles block remote references and executable CSS',()=>{assert.ok(safeStyle('fill:#333;marker-end:url(#arrow-1);'));for(const x of ['@import "https://x"','fill:url(https://x)','fill:url(data:x)','expression(alert(1))','\\75rl(x)'])assert.equal(safeStyle(x),false);});
+test('project import uses source and ignores supplied rendered markup',()=>{const p=receipt('flowchart LR\n A-->B','<svg/>');assert.equal(readProject(p).code,p.code);assert.ok(!('svg'in readProject(p)));assert.throws(()=>readProject({schema:'wrong'}));});
+test('configured extra templates are valid independent entries',()=>{const cfg=JSON.parse(readFileSync(new URL('../web/config.json',import.meta.url)));cfg.templates.push({id:'another',name:'Another',code:'flowchart LR\n One-->Two'});for(const t of cfg.templates)assert.ok(validateCode(t.code));assert.equal(new Set(cfg.templates.map(t=>t.id)).size,cfg.templates.length);});

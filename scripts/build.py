@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build a browser tool using Python's standard library; no network required."""
+import secrets
 from html import escape
 import json
 from pathlib import Path
@@ -40,6 +41,14 @@ def metadata(root=ROOT):
     return tool
 
 
+def renderer_document(stage):
+    """Authorize packaged scripts without giving the sandbox same-origin rights."""
+    frame = stage / "render.html"
+    nonce = secrets.token_urlsafe(24)
+    page = frame.read_text(encoding="utf-8").replace("{{SCRIPT_NONCE}}", nonce)
+    frame.write_text(page, encoding="utf-8")
+
+
 def build(root=ROOT):
     tool = metadata(root)
     output = root / "dist"
@@ -51,6 +60,7 @@ def build(root=ROOT):
     with tempfile.TemporaryDirectory(prefix="coolcode-tool-") as temporary:
         stage = Path(temporary) / "site"
         shutil.copytree(web, stage)
+        renderer_document(stage)
         index = stage / "index.html"
         page = index.read_text(encoding="utf-8")
         for token, key in {"TITLE": "title", "DESCRIPTION": "description", "TOOL_ID": "id", "SOURCE_URL": "source"}.items():
